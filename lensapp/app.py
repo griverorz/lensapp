@@ -3,8 +3,9 @@ from flask_restful import Resource, Api, reqparse
 import werkzeug
 from flask_httpauth import HTTPBasicAuth
 from celery import Celery
-import config
-from tasks import process_image
+from .tasks import process_image
+
+CELERY_BROKER = 'amqp://guest:guest@rabbitmq:5672//'
 
 app = Flask(__name__)
 api = Api(app)
@@ -12,7 +13,7 @@ auth = HTTPBasicAuth()
 
 
 def make_celery(app):
-    celery = Celery(app.import_name, broker=config.CELERY_BROKER)
+    celery = Celery(app.import_name)
     celery.conf.update(app.config)
     TaskBase = celery.Task
 
@@ -24,7 +25,7 @@ def make_celery(app):
                 return TaskBase.__call__(self, *args, **kwargs)
     celery.Task = ContextTask
 
-    return celery
+    return(celery)
 
 
 USER_DATA = {
@@ -33,7 +34,6 @@ USER_DATA = {
 
 
 celery = make_celery(app)
-app.config.from_object('config')
 
 
 @auth.verify_password
@@ -63,8 +63,4 @@ api.add_resource(ConsumeImg, '/upload')
 
 if __name__ == '__main__':
     app.run()
-
-
-# curl -i -X POST -H "Content-Type: multipart/form-data" -F "picture=@Washington-DC-hero-H.jpeg" http://127.0.0.1:5000/upload --user admin:pwd
-
-# celery -A app.celery worker --loglevel=info --config=celeryconfig
+ 

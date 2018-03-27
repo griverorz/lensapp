@@ -1,0 +1,40 @@
+version: '3'
+
+services:
+  rabbitmq:
+    image: rabbitmq:latest
+    ports:
+      - "5672:5672"
+    environment: 
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: guest
+    volumes:
+      - 'rabbitmq:/var/lib/rabbitmq'
+      
+  application:
+    build: .
+    command: >
+      gunicorn -b 0.0.0.0:8000
+        --access-logfile -
+        --reload
+        "lensapp.app:app"
+    environment:
+      PYTHONUNBUFFERED: 'true'
+    volumes:
+      - '.:/lensapp'
+    ports:
+      - '8000:8000'
+    links:
+      - rabbitmq
+    
+  celery:
+    build: .
+    command: celery -A lensapp.app.celery worker --loglevel=info --config=celeryconfig
+    user: nobody
+    volumes:
+      - '.:/lensapp'
+    links:
+      - rabbitmq:rabbit
+
+volumes:
+  rabbitmq:

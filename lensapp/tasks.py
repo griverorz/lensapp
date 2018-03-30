@@ -6,6 +6,5 @@ from matplotlib.image import imread
 @task
 def process_image(x):
     img = imread(x)
-    # some long running task here
-    time.sleep(5)
+    time.sleep(25)
     return(img.shape)

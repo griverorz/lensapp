@@ -20,8 +20,8 @@ app.config.update(
 
 def make_celery(app):
     celery = Celery(app.import_name,
-                    backend='redis://redis:6379/0',
-                    broker='redis://redis:6379/0')
+                    backend=app['CELERY_BROKER_URL'],
+                    broker=app['CELERY_RESULT_BACKEND'])
     celery.conf.update(app.config)
     TaskBase = celery.Task
 
@@ -58,12 +58,39 @@ class ConsumeImg(Resource):
         file = request.files['picture']
         filename = file.filename
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        img = process_image.delay(filename)
-        return({"data": img.get()}, 200)
+        task = process_image.delay(filename)
+        return({},
+               202,
+               {'Location': api.url_for(ConsumeImg,
+                                        taskid=task.id)})
+
+    @auth.login_required
+    def get(self, taskid):
+        task = process_image.AsyncResult(taskid)
+        if task.state == 'PENDING':
+            response = {
+                'id': task.id,
+                'state': task.state,
+                'status': "Task has not started"
+            }
+        elif task.state != 'FAILURE':
+            response = {
+                'id': task.id,
+                'state': task.state,
+                'status': 'Task has exited',
+                'result': task.info
+            }
+        else:
+            response = {
+                'id': task.id,
+                'state': task.state,
+                'status': str(task.info)
+            }
+        return(response, 200)
 
 
-api.add_resource(ConsumeImg, '/upload')
-
+api.add_resource(ConsumeImg, '/api/v1.0/upload', endpoint='upload')
+api.add_resource(ConsumeImg, '/api/v1.0/task/<string:taskid>', endpoint='task')
 
 if __name__ == '__main__':
     app.run()

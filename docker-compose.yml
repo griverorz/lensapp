@@ -1,16 +1,7 @@
 version: '3'
 
 services:
-  # rabbitmq:
-  #   image: rabbitmq:latest
-  #   ports:
-  #     - "5672:5672"
-  #   environment: 
-  #     RABBITMQ_DEFAULT_PASS: guest
-  #     RABBITMQ_DEFAULT_USER: guest
-  #   volumes:
-  #     - 'rabbitmq:/var/lib/rabbitmq'
-      
+
   application:
     build: .
     command: >
@@ -27,7 +18,7 @@ services:
     
   celery:
     build: .
-    command: celery -A lensapp.app.celery worker --loglevel=info --config=celeryconfig
+    command: celery -A lensapp.app.celery worker --loglevel=info --config=lensapp.config
     user: nobody
     volumes:
       - '.:/lensapp'
@@ -40,7 +31,6 @@ services:
     volumes:
       - 'redis:/data'
 
-  
+
 volumes:
-  # rabbitmq:
   redis:

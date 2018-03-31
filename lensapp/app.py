@@ -3,6 +3,7 @@ from flask_restful import Resource, Api
 from flask_httpauth import HTTPBasicAuth
 from celery import Celery
 from .tasks import process_image
+from .config import ProdConfig
 import os
 
 
@@ -10,18 +11,13 @@ app = Flask(__name__)
 api = Api(app)
 auth = HTTPBasicAuth()
 
-
-app.config.update(
-    CELERY_BROKER_URL='redis://redis:6379/0',
-    CELERY_RESULT_BACKEND='redis://redis:6379/0',
-    UPLOAD_FOLDER="."
-)
+app.config.from_object(ProdConfig)
 
 
 def make_celery(app):
     celery = Celery(app.import_name,
-                    backend=app['CELERY_BROKER_URL'],
-                    broker=app['CELERY_RESULT_BACKEND'])
+                    backend=app.config['CELERY_BROKER_URL'],
+                    broker=app.config['CELERY_RESULT_BACKEND'])
     celery.conf.update(app.config)
     TaskBase = celery.Task
 
@@ -37,12 +33,13 @@ def make_celery(app):
 
 celery = make_celery(app)
 
+
 USER_DATA = {
     "admin": "pwd"
 }
 
 
-celery = make_celery(app)
+########## Application ##########
 
 
 @auth.verify_password
@@ -91,6 +88,7 @@ class ConsumeImg(Resource):
 
 api.add_resource(ConsumeImg, '/api/v1.0/upload', endpoint='upload')
 api.add_resource(ConsumeImg, '/api/v1.0/task/<string:taskid>', endpoint='task')
+
 
 if __name__ == '__main__':
     app.run()

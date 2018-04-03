@@ -1,7 +1,25 @@
-version: '3'
+version: '2'
 
 services:
+      
 
+  redis:
+    image: redis:alpine
+    command: redis-server
+    ports:
+      - "6739:6739"
+
+      
+  celery:
+    build: .
+    command: celery -A lensapp.app.celery worker --loglevel=info --config=lensapp.config
+    user: nobody
+    volumes:
+      - '.:/lensapp'
+    links:
+      - redis
+
+      
   application:
     build: .
     command: >
@@ -15,22 +33,7 @@ services:
       - '.:/lensapp'
     ports:
       - '8000:8000'
-    
-  celery:
-    build: .
-    command: celery -A lensapp.app.celery worker --loglevel=info --config=lensapp.config
-    user: nobody
-    volumes:
-      - '.:/lensapp'
 
-  redis:
-    image: redis:alpine
-    command: redis-server
-    ports:
-      - "6739:6739"
-    volumes:
-      - 'redis:/data'
-
-
-volumes:
+      
+volumes:  
   redis:

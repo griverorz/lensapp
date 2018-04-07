@@ -1,8 +1,19 @@
-version: '2'
+version: '3'
 
 services:
-      
 
+  
+  rabbitmq:
+    image: rabbitmq:latest
+    ports:
+      - "5672:5672"
+    environment: 
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: guest
+    volumes:
+      - 'rabbitmq:/var/lib/rabbitmq'
+
+      
   redis:
     image: redis:alpine
     command: redis-server
@@ -18,9 +29,10 @@ services:
       - '.:/lensapp'
     links:
       - redis
+      - rabbitmq
 
       
-  application:
+  application:          
     build: .
     command: >
       gunicorn -b 0.0.0.0:8000
@@ -34,6 +46,8 @@ services:
     ports:
       - '8000:8000'
 
-      
+
+    
 volumes:  
   redis:
+  rabbitmq:

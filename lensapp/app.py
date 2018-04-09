@@ -4,13 +4,13 @@ from flask_httpauth import HTTPBasicAuth
 from celery import Celery
 from .tasks import process_image
 from .config import ProdConfig
+from mongoengine import StringField, Document
 import os
 
 
 app = Flask(__name__)
 api = Api(app)
 auth = HTTPBasicAuth()
-
 app.config.from_object(ProdConfig)
 
 
@@ -42,6 +42,11 @@ USER_DATA = {
 ########## Application ##########
 
 
+class ParsedCSV(Document):
+    state = StringField(required=True)
+    status = StringField(required=True)
+
+
 @auth.verify_password
 def verify(username, password):
     if not (username and password):
@@ -70,13 +75,6 @@ class ConsumeImg(Resource):
                 'state': task.state,
                 'status': "Task has not started"
             }
-        elif task.state != 'FAILURE':
-            response = {
-                'id': task.id,
-                'state': task.state,
-                'status': 'Task has exited',
-                'result': task.info
-            }
         else:
             response = {
                 'id': task.id,
@@ -86,8 +84,16 @@ class ConsumeImg(Resource):
         return(response, 200)
 
 
+# class SearchImg(Resource):
+#     @auth.login_required
+#     def get(self):
+#         test = mongo.restdb.collection_names()
+#         return(test, 200)
+
+
 api.add_resource(ConsumeImg, '/api/v1.0/upload', endpoint='upload')
 api.add_resource(ConsumeImg, '/api/v1.0/task/<string:taskid>', endpoint='task')
+# api.add_resource(SearchImg, '/api/v1.0/tasks', endpoint='tasks')
 
 
 if __name__ == '__main__':

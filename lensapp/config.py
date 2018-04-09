@@ -1,7 +1,11 @@
 from __future__ import absolute_import
+import sys
 
-broker_url = 'amqp://guest:guest@rabbitmq:5672//'
-result_backend = 'redis://redis:6379/0'
+sys.path.append("..")
+
+from celeryconfig import (broker_url,
+                          result_backend,
+                          mongodb_backend_settings)
 
 
 class Config(object):
@@ -14,6 +18,7 @@ class DevConfig(Config):
     CELERY_BROKER_URL = broker_url
     CELERY_RESULT_BACKEND = result_backend
     UPLOAD_FOLDER = "."
+    MONGO_URI = mongodb_backend_settings
 
 
 class ProdConfig(Config):
@@ -21,3 +26,4 @@ class ProdConfig(Config):
     CELERY_BROKER_URL = broker_url
     CELERY_RESULT_BACKEND = result_backend
     UPLOAD_FOLDER = "."
+    MONGO_URI = mongodb_backend_settings

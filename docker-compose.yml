@@ -12,14 +12,7 @@ services:
       RABBITMQ_DEFAULT_USER: guest
     volumes:
       - 'rabbitmq:/var/lib/rabbitmq'
-
       
-  redis:
-    image: redis:alpine
-    command: redis-server
-    ports:
-      - "6739:6739"
-
       
   celery:
     build: .
@@ -28,11 +21,23 @@ services:
     volumes:
       - '.:/lensapp'
     links:
-      - redis
       - rabbitmq
+      - mongodb
 
       
-  application:          
+  monitor:
+    build: .
+    ports:
+     - "5555:5555"
+    entrypoint: flower
+    user: nobody
+    command: -A lensapp.app.celery --port=5555 
+    depends_on:
+      - rabbitmq
+      - mongodb
+
+
+  application:
     build: .
     command: >
       gunicorn -b 0.0.0.0:8000
@@ -45,9 +50,15 @@ services:
       - '.:/lensapp'
     ports:
       - '8000:8000'
+    links:
+      - mongodb
 
+  mongodb:
+    image: mongo:3.3
 
     
 volumes:  
-  redis:
+  # redis:
   rabbitmq:
+  mongodb:
+    

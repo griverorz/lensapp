@@ -7,6 +7,7 @@ services:
     image: rabbitmq:latest
     ports:
       - "5672:5672"
+      - "15672:15672"
     environment: 
       RABBITMQ_DEFAULT_PASS: guest
       RABBITMQ_DEFAULT_USER: guest
@@ -16,7 +17,7 @@ services:
       
   celery:
     build: .
-    command: celery -A lensapp.app.celery worker --loglevel=info --config=lensapp.config
+    command: celery -A lensapp.app.celery worker --config=lensapp.config --concurrency=4
     user: nobody
     volumes:
       - '.:/lensapp'
@@ -31,7 +32,7 @@ services:
      - "5555:5555"
     entrypoint: flower
     user: nobody
-    command: -A lensapp.app.celery --port=5555 
+    command: -A lensapp.app.celery --port=5555
     depends_on:
       - rabbitmq
       - mongodb

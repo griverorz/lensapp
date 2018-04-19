@@ -13,10 +13,12 @@ services:
       RABBITMQ_DEFAULT_USER: guest
     volumes:
       - 'rabbitmq:/var/lib/rabbitmq'
+    networks:
+      - webnet
       
       
   celery:
-    build: .
+    image: python-image:latest
     command: celery -A lensapp.app.celery worker --config=lensapp.config --concurrency=4
     user: nobody
     volumes:
@@ -24,10 +26,12 @@ services:
     links:
       - rabbitmq
       - mongodb
+    networks:
+      - webnet
 
       
   monitor:
-    build: .
+    image: python-image:latest
     ports:
      - "5555:5555"
     entrypoint: flower
@@ -36,10 +40,20 @@ services:
     depends_on:
       - rabbitmq
       - mongodb
+    networks:
+      - webnet
 
 
   application:
-    build: .
+    deploy:
+      replicas: 4
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 100M
+      restart_policy:
+        condition: on-failure
+    image: python-image:latest
     command: >
       gunicorn -b 0.0.0.0:8000
         --access-logfile -
@@ -53,9 +67,14 @@ services:
       - '8000:8000'
     links:
       - mongodb
+    networks:
+      - webnet
 
+      
   mongodb:
     image: mongo:3.3
+    networks:
+      - webnet
 
     
 volumes:  
@@ -63,3 +82,6 @@ volumes:
   rabbitmq:
   mongodb:
     
+
+networks:
+  webnet:
